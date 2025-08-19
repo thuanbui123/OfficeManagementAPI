@@ -1,0 +1,43 @@
+{
+  "compilerOptions": {
+    /* ---- Layout ---- */
+    "rootDir": "./src",
+    "outDir": "./dist",
+
+    /* ---- Runtime (Node + CommonJS) ---- */
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+
+    /* ---- JS/TS cùng tồn tại khi migrate ---- */
+    "allowJs": true,
+    "checkJs": false,
+
+    /* ---- Chất lượng & tiện ích ---- */
+    "strict": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "sourceMap": true,
+    "declaration": false,
+
+    /* ---- Types & alias đúng với cấu trúc của bạn ---- */
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@config/*": ["src/config/*"],
+      "@controllers/*": ["src/controllers/*"],
+      "@libs/*": ["src/libs/*"],
+      "@middlewares/*": ["src/middlewares/*"],
+      "@models/*": ["src/models/*"],
+      "@repositories/*": ["src/repositories/*"],
+      "@routes/*": ["src/routes/*"],
+      "@services/*": ["src/services/*"],
+      "@utils/*": ["src/utils/*"],
+      "@app-types/*": ["src/types/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
