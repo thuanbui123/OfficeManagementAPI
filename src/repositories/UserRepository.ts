@@ -1,11 +1,10 @@
-import mongoose from 'mongoose';
-import type { PaginateArgs, PaginatedResult } from '@app-types/common';
+import mongoose, { ObjectId } from "mongoose";
+import UserModel, { User } from "@models/User";
 
-// Model User đang là JS nên require + gắn type Model<any>
-const User = require('../models/User').default;
+import type { PaginateArgs, PaginatedResult } from "@app-types/common";
 
-// createPaginatedRepo từ JS: khai báo type tối thiểu cho hàm trả về
-const { createPaginatedRepo } = require('../libs/createPaginatedRepo') as {
+// các lib JS: khai báo type tối thiểu
+const { createPaginatedRepo } = require("../libs/createPaginatedRepo") as {
   createPaginatedRepo: <T>(opts: {
     model: mongoose.Model<T>;
     select?: string | Record<string, 1 | 0>;
@@ -15,25 +14,29 @@ const { createPaginatedRepo } = require('../libs/createPaginatedRepo') as {
   };
 };
 
-// buildKeywordFilter từ JS: type tối thiểu
-const { buildKeywordFilter } = require('../libs/keyword') as {
+const { buildKeywordFilter } = require("../libs/keyword") as {
   buildKeywordFilter: (
     fields: string[],
     keyword: string,
     opts?: {
-      mode?: 'any' | 'all';
-      match?: 'prefix' | 'contains';
+      mode?: "any" | "all";
+      match?: "prefix" | "contains";
       tokenize?: boolean;
       caseInsensitive?: boolean;
     }
   ) => any;
 };
 
-// Tạo repo có paginate()
-const UserList = createPaginatedRepo<any>({
-  model: User,
-  select: '_id username createdAt',
-  buildBaseFilter: ({ keyword, authorId, mode, match }: PaginateArgs & { authorId?: string }) => {
+// Repo có paginate()
+export const UserList = createPaginatedRepo<User>({
+  model: UserModel,
+  select: "_id username createdAt",
+  buildBaseFilter: ({
+    keyword,
+    authorId,
+    mode,
+    match,
+  }: PaginateArgs & { authorId?: string }) => {
     const filter: Record<string, any> = {};
 
     if (authorId && mongoose.isValidObjectId(authorId)) {
@@ -41,15 +44,13 @@ const UserList = createPaginatedRepo<any>({
     }
 
     if (keyword && keyword.trim()) {
-      // TODO: nếu đây là repo User, bạn nên đổi các field cho đúng schema User
-      // ví dụ: ['username', 'email', 'fullName'] thay vì ['title','body','authorName']
       const keywordFilter = buildKeywordFilter(
         ["username", "email", "fullName"],
         keyword,
         {
-          mode: mode || 'any',        // 'any' (mặc định) hoặc 'all'
-          match: match || 'prefix',   // 'prefix' (ăn index) hoặc 'contains'
-          tokenize: true,             // tách keyword thành token
+          mode: mode || "any",
+          match: match || "prefix",
+          tokenize: true,
           caseInsensitive: true,
         }
       );
@@ -60,5 +61,32 @@ const UserList = createPaginatedRepo<any>({
   },
 });
 
-// Giữ CommonJS export để code cũ không cần sửa
-module.exports = UserList;
+export const GetUser = async (username: string, email: string) => {
+  return await UserModel.findOne({
+    $or: [{ username }, { email }],
+  });
+};
+
+export const CreateUser = async (data: Partial<User>) => {
+  try {
+    const user = new UserModel(data); 
+    await user.save();
+    return { ok: true, user };
+  } catch (e: any) {
+    console.error("Error in CreateUser:", e?.message || e);
+    return { ok: false, error: e };
+  }
+};
+
+export const UpdateRefreshToken = async (userId: ObjectId, refreshToken: string) => {
+  try {
+    const result = await UserModel.updateOne(
+      { _id: userId },
+      { $set: { refreshToken } }
+    );
+    return { ok: true, result };
+  } catch (e: any) {
+    console.error("Error in UpdateRefreshToken:", e?.message || e);
+    return { ok: false, error: e };
+  }
+}

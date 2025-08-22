@@ -1,7 +1,6 @@
-import type { ListQuery, PaginateArgs, ReqQ, Res, Next } from '@app-types/common';
+import type { ListQuery, ReqQ, Res, Next } from '@app-types/common';
 
-const UserList: { paginate: (args: PaginateArgs) => Promise<any> } =
-  require('../repositories/UserRepository');
+import { UserList } from '@repositories/UserRepository';
 
 class UserController {
   async list(req: ReqQ<ListQuery>, res: Res, _next: Next) {

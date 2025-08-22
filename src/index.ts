@@ -30,6 +30,12 @@ const swaggerOptions: swaggerJsdoc.Options = {
       description: "API docs for OfficeManagement system",
     },
     servers: [{ url: "http://localhost:3000/api" }],
+    components: {
+      securitySchemes: {
+        bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" },
+      },
+    },
+    security: [{ bearerAuth: [] }],
   },
   apis: [path.join(__dirname, 'routes', '*.{ts,js}')],
 };
@@ -40,7 +46,9 @@ app.use(
   swaggerUi.serve,
   swaggerUi.setup(swaggerSpec, {
     explorer: true,
-    swaggerOptions: { deepLinking: false },
+    swaggerOptions: {
+      persistAuthorization: true
+    },
   })
 );
 
@@ -48,6 +56,10 @@ app.get("/docs.json", (_req, res) => res.json(swaggerSpec));
 
 app.use(express.json({ limit: "1mb" }));
 app.use(rateLimit());
+
+app.get("/", (req, res) => {
+  res.json({ message: "Truy cập vào /docs để xem danh sách API" });
+});
 
 app.use("/api", routes);
 
