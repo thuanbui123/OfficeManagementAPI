@@ -3,12 +3,11 @@ import env from "@config/env";
 
 const { GetUser } = require("@repositories/UserRepository");
 import { redis } from "@libs/redis";
+import { ensureRedisOpen } from "@libs/redis";
 const { decodeToken } = require("@utils/jwt");
 const { getTokenFromReq, sha256 } = require("@utils/authUtil");
  
 export const isAuth = async (req: Request, res: Response, next: NextFunction) => {
-  // checkpoint: đảm bảo bạn thấy log này ở mỗi request
-  console.log('[isAuth] incoming', { path: req.path, method: req.method });
 
   try {
     const accessTokenFromHeader = getTokenFromReq(req);
@@ -67,8 +66,7 @@ export const isAuth = async (req: Request, res: Response, next: NextFunction) =>
         : now + 15 * 60;
 
     const ttl = Math.max(5, exp - now);
-    const jti =
-      (decoded.jti as string) || sha256(accessTokenFromHeader);
+    const jti = (decoded.jti as string) || sha256(accessTokenFromHeader);
     const sessionKey = `auth:sess:${jti}`;
 
     const snapshot = {
@@ -81,9 +79,8 @@ export const isAuth = async (req: Request, res: Response, next: NextFunction) =>
       ua: req.headers['user-agent'] || '',
     };
 
-    console.log('[isAuth] snapshot', snapshot);
-
     try {
+      await ensureRedisOpen();
       await redis.set(sessionKey, JSON.stringify(snapshot), { EX: ttl });
     } catch (e) {
       // Không nên chặn request chỉ vì cache lỗi (tùy yêu cầu)

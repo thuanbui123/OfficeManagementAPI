@@ -2,6 +2,8 @@ import { Router } from "express";
 import ctrl from "@controllers/EmployeeController";
 
 import { isAuth } from "@middlewares/AuthMiddleware";
+import { enrichAuth } from "@middlewares/AuthEnrich";
+import { requirePermission } from "@middlewares/Guards";
 const isAuthed = isAuth;
 const r = Router();
 
@@ -65,6 +67,6 @@ const r = Router();
  *       200:
  *         description: Danh sách nhân viên phân trang
  */
-r.get("/", isAuthed, ctrl.list);
+r.get("/", isAuthed, enrichAuth, requirePermission("employee:manage"), ctrl.list);
 
 module.exports = r;

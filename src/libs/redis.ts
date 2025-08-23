@@ -9,3 +9,7 @@ redis.on("error", (e) => console.error("Redis error:", e));
 export async function initRedis() {
   if (!redis.isOpen) await redis.connect();
 }
+
+export async function ensureRedisOpen() {
+  if (!redis.isOpen) await redis.connect();
+}

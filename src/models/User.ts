@@ -7,9 +7,11 @@ const userSchema = new Schema(
     password: { type: String, minlength: 6, required: true },
     lastPass: { type: String, minlength: 6, required: false },
     isActive: { type: Boolean, default: false },
+    isDeleted: { type: Boolean, default: false },
     img: { type: String, default: "https://viblo.asia/images/vi-flag-32x48.png" },
-    loginFalse: { type: Number, default: 0 },        // <-- Number, không phải number
-    refreshToken: { type: String, required: false }  // <-- required, không phải require
+    loginFalse: { type: Number, default: 0 },        
+    refreshToken: { type: String, required: false },  
+    roles: { type: [String], default: [] },
   },
   {
     collection: "users",

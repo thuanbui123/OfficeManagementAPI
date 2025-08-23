@@ -13,9 +13,11 @@ const errorHandler = require("./middlewares/error");
 const rateLimit = require("./middlewares/rateLimit");
 const env = require("./config/env");
 const db = require("@config/db/index");
-
+import { initRedis } from "@libs/redis";
 db.connect();
-
+async () => {
+  await initRedis();
+}
 const app = express();
 const port = Number(env.PORT) || 3000;
 

@@ -28,7 +28,7 @@ type RefreshTokenRequest = {
 class AuthController {
     async Register (req: ReqQ<RegisterRequest>, res: Res, _next: Next) {
         try {
-            const username = req.body.username.toLowerCase();
+            const username = req.body.username;
             const email = req.body.email.toLowerCase();
             var user = await GetUser(username, email);
             if(user) res.status(409).send('Tài khoản đã tồn tại');
@@ -57,7 +57,7 @@ class AuthController {
     }
     async Login (req: ReqQ<LoginRequest>, res: Res, _next: Next) {
         try {
-            const username = req.body.username.toLowerCase();
+            const username = req.body.username;
             const password = req.body.password;
             if(!username || !password) {
                 return res.status(401).json({
@@ -69,6 +69,16 @@ class AuthController {
                 return res.status(401).json({
                     err: "Tên đăng nhập không tồn tại"
                 })
+            }
+            if(!user.isActive) {
+                return res.status(401).json({
+                    err: "Tài khoản của bạn chưa được kích hoạt"
+                });
+            }
+            if(user.isDeleted) {
+                return res.status(401).json({
+                    err: "Tài khoản của bạn đã bị xóa"
+                });
             }
             const isPasswordValid = comparePassword(password, user.password);
             if(!isPasswordValid) {
