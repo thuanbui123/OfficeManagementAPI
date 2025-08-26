@@ -1,5 +1,5 @@
 import { Router } from "express";
-import ctrl from "../../src/controllers/UserController";
+import ctrl from "@controllers/UserController";
 
 const r = Router();
 

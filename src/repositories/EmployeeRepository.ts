@@ -1,6 +1,6 @@
 import { Model, PipelineStage, FilterQuery } from 'mongoose';
-import EmployeeModel, { type Employee } from '../models/Employee';
-import { aggregateMultipleCollections } from '../libs/createPaginatedRepo';
+import EmployeeModel, { type Employee } from '@models/Employee';
+import { aggregateMultipleCollections } from '@libs/createPaginatedRepo';
 
 export type EmployeeListParams = {
   page?: number;

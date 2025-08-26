@@ -1,5 +1,6 @@
 import UserModel, { User } from "@models/User";
 import { RoleModel } from "@models/Role";
+import { PermissionModel } from "@models/Permission";
 
 export async function GetUserRolesByUserId(userId: string): Promise<string[]> {
   const user = await UserModel.findById(userId).select({ roles: 1 }).lean();
@@ -16,4 +17,9 @@ export async function GetPermsByRoles(roleNames: string[]): Promise<string[]> {
   const set = new Set<string>();
   for (const r of roles) (r.permissions ?? []).forEach(p => set.add(p));
   return Array.from(set);
+}
+export async function CheckExist(code: string) : Promise<boolean> {
+  var exists = PermissionModel.exists({ code });
+
+  return !!exists;
 }

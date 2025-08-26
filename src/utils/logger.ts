@@ -1,4 +1,3 @@
-// src/logger.ts
 import pino, { LoggerOptions, TransportSingleOptions } from 'pino';
 
 type LogLevel = 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace' | 'silent';
