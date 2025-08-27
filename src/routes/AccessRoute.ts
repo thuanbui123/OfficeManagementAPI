@@ -10,6 +10,8 @@ const r = Router();
  * @openapi
  * /access/roles/create:
  *   post:
+ *     tags:
+ *       - Access
  *     summary: Tạo vai trò mới
  *     requestBody:
  *       required: true
@@ -43,6 +45,8 @@ r.post("/roles/create", isAuth, enrichAuth, requirePermission('role:create'), ct
  * @openapi
  * /access/permissions:
  *   get:
+ *     tags:
+ *       - Access
  *     summary: Lấy danh sách quyền theo tên vai trò
  *     parameters:
  *       - in: query
@@ -64,6 +68,8 @@ r.get("/permissions", isAuth, enrichAuth, requirePermission('permissions:get'), 
  * @openapi
  * /access/roles/{name}/permissions:
  *   put:
+ *     tags:
+ *       - Access
  *     summary: Cập nhật (gán) danh sách quyền cho một vai trò (replace toàn bộ)
  *     description: |
  *       Nhận danh sách RolePermissionItem, lọc các item `selected = true`, validate `code` tồn tại trong DB,
@@ -208,6 +214,8 @@ r.put( "/roles/:name/permissions", isAuth, enrichAuth, requirePermission("roles:
  * @openapi
  * /access/users/{userId}/role:
  *   put:
+ *     tags:
+ *       - Access
  *     summary: Gán một vai trò (role) cho người dùng
  *     description: |
  *       Chỉ định **duy nhất một role** cho user (replace toàn bộ).  

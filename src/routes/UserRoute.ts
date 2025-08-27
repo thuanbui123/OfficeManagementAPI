@@ -1,5 +1,8 @@
 import { Router } from "express";
 import ctrl from "@controllers/UserController";
+import { enrichAuth } from "@middlewares/AuthEnrich";
+import { requirePermission } from "@middlewares/Guards";
+import { isAuth } from "@middlewares/AuthMiddleware";
 
 const r = Router();
 
@@ -7,6 +10,8 @@ const r = Router();
  * @openapi
  * /users:
  *   get:
+ *     tags:
+ *       - User
  *     summary: Lấy danh sách người dùng trong hệ thống
  *     parameters:
  *       - in: query
@@ -44,6 +49,6 @@ const r = Router();
  *       200:
  *         description: Trả về trạng thái "ok" và danh sách người dùng
  */
-r.get("/", ctrl.list);
+r.get("/", isAuth, enrichAuth, requirePermission("user:manage"), ctrl.list);
 
 module.exports = r;

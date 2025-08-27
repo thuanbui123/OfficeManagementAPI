@@ -7,7 +7,10 @@ const r = Router();
  * @openapi
  * /auth/register:
  *   post:
+ *     tags:
+ *       - Auth
  *     summary: Đăng kí tài khoản
+ *     security: []
  *     requestBody:
  *       required: true
 *       content:
@@ -42,7 +45,10 @@ r.post("/register", ctrl.Register);
  * @openapi
  * /auth/login:
  *   post:
+ *     tags:
+ *       - Auth
  *     summary: Đăng nhập hệ thống
+ *     security: []
  *     requestBody:
  *       required: true
 *       content:
@@ -72,6 +78,7 @@ r.post("/login", ctrl.Login)
  * /auth/refresh-token:
  *   post:
  *     summary: Cấp lại access token từ access token hết hạn và refresh token
+ *     security: []
  *     description: |
  *       - Lấy access token cũ từ header `x_authorization` (có thể đã hết hạn, chỉ để đọc username).
  *       - Lấy `refreshToken` từ body và xác thực với DB.
@@ -152,5 +159,62 @@ r.post("/login", ctrl.Login)
  *           type: string
  */
 r.post("/refresh-token", ctrl.RefreshToken);
+
+/**
+ * @openapi
+ * /auth/activate:
+ *   get:
+ *     tags:
+ *       - Auth
+ *     summary: Kích hoạt tài khoản bằng token
+ *     security: []
+ *     description: Nhận token kích hoạt dùng 1 lần qua query `token`. Nếu hợp lệ và còn hạn, user sẽ được kích hoạt và token được đánh dấu đã dùng.
+ *     parameters:
+ *       - in: query
+ *         name: token
+ *         required: true
+ *         description: Token kích hoạt dạng hex, tối thiểu 32 ký tự.
+ *         schema:
+ *           type: string
+ *           minLength: 32
+ *     responses:
+ *       "200":
+ *         description: Kích hoạt thành công
+ *         content:
+ *           text/plain:
+ *             schema: { type: string }
+ *             examples:
+ *               success: { value: "Tài khoản đã được kích hoạt thành công!" }
+ *       "400":
+ *         description: Thiếu/không hợp lệ hoặc không tìm thấy token
+ *         content:
+ *           text/plain:
+ *             schema: { type: string }
+ *             examples:
+ *               invalid: { value: "Thiếu hoặc token không hợp lệ" }
+ *               notFound: { value: "Kích hoạt thất bại: TOKEN_NOT_FOUND" }
+ *       "409":
+ *         description: Token đã được sử dụng
+ *         content:
+ *           text/plain:
+ *             schema: { type: string }
+ *             examples:
+ *               used: { value: "Kích hoạt thất bại: TOKEN_USED" }
+ *       "410":
+ *         description: Token đã hết hạn
+ *         content:
+ *           text/plain:
+ *             schema: { type: string }
+ *             examples:
+ *               expired: { value: "Kích hoạt thất bại: TOKEN_EXPIRED" }
+ *       "500":
+ *         description: Lỗi máy chủ
+ *         content:
+ *           text/plain:
+ *             schema: { type: string }
+ *             examples:
+ *               serverError: { value: "Lỗi máy chủ" }
+ */
+r.get('/activate', ctrl.activate);
 
 module.exports = r;

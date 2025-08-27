@@ -35,6 +35,20 @@ class AuthController {
             return res.status(status).json({ error: message });
         }
     }
+
+    async activate(req: ReqQ<any>, res: Res, next: Next) {
+        try {
+            const rawToken = String(req.query.token || "");
+            await authService.activateAccountByToken(rawToken);
+
+            return res.status(200).json("Tài khoản đã được kích hoạt thành công!");
+        } catch (err: any) {
+            console.error('Err activate', err);
+            const status = typeof err?.status === 'number' ? err.status : 400;
+            const message = err instanceof Error ? err.message : 'Xảy ra lỗi khi xác nhận đăng ký tài khoản mới';
+            return res.status(status).json({ error: message });
+        }
+    }
 }
 
 export default new AuthController();

@@ -1,6 +1,9 @@
 import { hashPassword, comparePassword } from "@utils/passwordHelper";
 import { StringExpressionOperatorReturningNumber } from 'mongoose';
 import env from "@config/env";
+import { consumeActivationToken, createActivationToken } from "@services/ActivationTokenService";
+import { sendMail } from "@libs/mailer";
+import { ActivationError } from "@app-types/activationError";
 
 const { GetUser } = require("@repositories/UserRepository");
 const { CreateUser } = require("@repositories/UserRepository");
@@ -95,6 +98,20 @@ export class AuthService {
         'Có lỗi trong quá trình tạo tài khoản, vui lòng thử lại.'
       );
     }
+
+    const { raw, expiresAt } = await createActivationToken(created.user._id, 24);
+    const origin = (process.env.APP_ORIGIN || "").replace(/\/$/, "");
+    const activationLink = `${origin}/auth/activate?token=${raw}`;
+
+    await sendMail({
+      to: email,
+      subject: "Kích hoạt tài khoản",
+      html: `
+        <p>Chào bạn,</p>
+        <p>Bấm liên kết sau để kích hoạt tài khoản (hết hạn lúc <b>${expiresAt.toISOString()}</b>):</p>
+        <p><a href="${activationLink}">${activationLink}</a></p>
+      `,
+    });
 
     return { username };
   }
@@ -194,6 +211,22 @@ export class AuthService {
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,
     };
+  }
+
+  async activateAccountByToken(rawToken: string) {
+    if (!rawToken || rawToken.length < 32) {
+      throw new ActivationError("TOKEN_INVALID", "Thiếu hoặc token không hợp lệ");
+    }
+
+    const result = await consumeActivationToken(rawToken);
+
+    if (!result.ok) {
+      // Map sang ActivationError để controller/route dễ handle
+      throw new ActivationError(result.reason);
+    }
+
+    // Có thể trả thêm thông tin nếu cần
+    return { userId: result.userId };
   }
 }
 

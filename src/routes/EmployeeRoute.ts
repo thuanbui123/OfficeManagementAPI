@@ -11,6 +11,8 @@ const r = Router();
  * @openapi
  * /employees:
  *   get:
+ *     tags:
+ *       - Employee
  *     summary: Lấy danh sách nhân viên (có join user & department)
  *     components:
  *     securitySchemes:
