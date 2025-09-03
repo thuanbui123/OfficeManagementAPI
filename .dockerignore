@@ -1,0 +1,11 @@
+.git
+.vscode
+node_modules
+npm-debug.log
+yarn.lock
+pnpm-lock.yaml
+dist
+.env
+coverage
+Dockerfile
+docker-compose.*

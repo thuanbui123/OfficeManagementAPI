@@ -1,0 +1,33 @@
+version: "3.9"
+services:
+  api:
+    build: .
+    container_name: office-mgmt-api
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env        # load biến môi trường từ file .env (local dev)
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      # override DB url để trỏ tới service "mongodb" bên dưới
+      MONGO_URI: mongodb://root:example@mongodb:27017/OfficeManagement?authSource=admin
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo:6.0
+    container_name: office-mgmt-mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+      MONGO_INITDB_DATABASE: office
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:
