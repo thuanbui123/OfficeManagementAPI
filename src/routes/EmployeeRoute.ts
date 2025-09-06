@@ -71,4 +71,80 @@ const r = Router();
  */
 r.get("/", isAuthed, enrichAuth, requirePermission("employee:manage"), ctrl.list);
 
+/**
+ * @openapi
+ * /employees:
+ *   post:
+ *     tags:
+ *       - Employee
+ *     summary: Tạo mới nhân viên
+ *     description: Tạo mới một nhân viên và phát sự kiện EmployeeCreated vào Kafka
+ *     components:
+ *       securitySchemes:
+ *         bearerAuth:
+ *           type: http
+ *           scheme: bearer
+ *           bearerFormat: JWT
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - empCode
+ *               - email
+ *               - fullName
+ *               - deptId
+ *             properties:
+ *               empCode:
+ *                 type: string
+ *                 description: Mã nhân viên duy nhất
+ *                 example: "E0001"
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "alice@example.com"
+ *               fullName:
+ *                 type: string
+ *                 example: "Alice Nguyễn"
+ *               deptId:
+ *                 type: string
+ *                 description: ID phòng ban
+ *                 example: "DEPT01"
+ *               title:
+ *                 type: string
+ *                 description: Chức danh
+ *                 example: "HR Specialist"
+ *               hireDate:
+ *                 type: string
+ *                 format: date
+ *                 description: Ngày vào làm
+ *                 example: "2025-09-04"
+ *               salary:
+ *                 type: number
+ *                 format: float
+ *                 example: 1500.5
+ *     responses:
+ *       201:
+ *         description: Tạo nhân viên thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                   example: "EMP001"
+ *       400:
+ *         description: Dữ liệu không hợp lệ
+ *       401:
+ *         description: Không có quyền truy cập
+ *       409:
+ *         description: Nhân viên đã tồn tại
+ */
+r.post("/", ctrl.createEmployee);
+
 module.exports = r;

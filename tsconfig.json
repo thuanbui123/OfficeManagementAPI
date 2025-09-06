@@ -35,7 +35,8 @@
       "@routes/*": ["routes/*"],
       "@services/*": ["services/*"],
       "@utils/*": ["utils/*"],
-      "@app-types/*": ["types/*"]
+      "@app-types/*": ["types/*"],
+      "@events/*": ["events/*"],
     }
   },
   "include": ["src/**/*"],

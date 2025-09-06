@@ -1,33 +1,196 @@
 version: "3.9"
-services:
-  api:
-    build: .
-    container_name: office-mgmt-api
-    restart: always
-    ports:
-      - "3000:3000"
-    env_file:
-      - .env        # load biến môi trường từ file .env (local dev)
-    environment:
-      NODE_ENV: production
-      PORT: 3000
-      # override DB url để trỏ tới service "mongodb" bên dưới
-      MONGO_URI: mongodb://root:example@mongodb:27017/OfficeManagement?authSource=admin
-    depends_on:
-      - mongodb
 
+networks:
+  app-net:
+
+volumes:
+  mongo_data:
+  redis_data:
+  zk_data:
+  zk_datalog:
+  kafka_data:
+
+services:
+  # ===================== Redis =====================
+  redis:
+    image: redis:7
+    container_name: office-mgmt-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks: [app-net]
+
+  # ===================== MongoDB =====================
   mongodb:
     image: mongo:6.0
     container_name: office-mgmt-mongo
-    restart: always
-    ports:
-      - "27017:27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
       MONGO_INITDB_DATABASE: office
+    ports:
+      - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    restart: unless-stopped
+    networks: [app-net]
 
-volumes:
-  mongo_data:
+  # ===================== Zookeeper =====================
+  zookeeper:
+    image: bitnami/zookeeper:3.9
+    container_name: zk
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+      - ZOO_TICK_TIME=2000
+    ports:
+      - "2181:2181"
+    volumes:
+      - zk_data:/bitnami/zookeeper
+      - zk_datalog:/bitnami/zookeeper/data
+    restart: unless-stopped
+    networks: [app-net]
+
+  # ===================== Kafka (single broker, Zookeeper mode) =====================
+  kafka:
+    image: bitnami/kafka:3.7
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"   # EXTERNAL cho máy ngoài Docker
+    environment:
+      # --- ZK connect ---
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+
+      # --- 2 listeners: nội bộ Docker & host ---
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:29092,PLAINTEXT_HOST://:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+
+      # --- Single-broker: RF = 1 ---
+      - KAFKA_CFG_DEFAULT_REPLICATION_FACTOR=1
+      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=1
+      - KAFKA_CFG_MIN_INSYNC_REPLICAS=1
+
+      # --- Tùy chọn ---
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false
+      - KAFKA_CFG_NUM_PARTITIONS=1
+
+      # Tăng tính ổn định/dev UX
+      - KAFKA_CFG_NUM_NETWORK_THREADS=3
+      - KAFKA_CFG_NUM_IO_THREADS=8
+
+    volumes:
+      - kafka_data:/bitnami/kafka
+
+    healthcheck:
+      # Dùng CLI với đường dẫn đầy đủ và listener nội bộ 29092
+      test: ["CMD", "bash", "-lc", "/opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server localhost:29092 --list >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+    restart: unless-stopped
+    networks: [app-net]
+
+  # ===================== Init job: tạo topic trước khi API chạy =====================
+  topic-init:
+    image: bitnami/kafka:3.7
+    container_name: topic-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: [ "bash", "-lc" ]
+    command:
+      - |
+        set -e
+        echo '⏳ Waiting Kafka...'
+        for i in {1..60}; do
+          /opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server kafka:29092 --list >/dev/null 2>&1 && break || sleep 1
+        done
+
+        ensure_topic () {
+          local T=$$1
+          local P=$${2:-1}
+          /opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server kafka:29092 --describe --topic "$$T" >/dev/null 2>&1 \
+          || /opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server kafka:29092 --create --topic "$$T" --replication-factor 1 --partitions "$$P"
+        }
+
+        ensure_topic employee.events 6
+        ensure_topic user.events 3
+        ensure_topic room.events 3
+
+        echo '✅ Kafka topics ensured'
+    restart: "no"
+    networks: [app-net]
+
+  # ===================== API =====================
+  api:
+    build: .
+    container_name: office-mgmt-api
+    depends_on:
+      mongodb:
+        condition: service_started
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_healthy
+      topic-init:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      # Mongo: dùng service name nội bộ Docker
+      MONGO_URI: mongodb://root:example@mongodb:27017/OfficeManagement?authSource=admin
+      # Kafka: API chạy trong Docker -> listener nội bộ
+      KAFKA_BROKERS: kafka:29092
+      KAFKA_CLIENT_ID: office-mgmt-api
+      KAFKA_SSL: "false"
+      KAFKA_EMP_TOPIC: employee.events
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    restart: unless-stopped
+    networks: [app-net]
+
+  # ===================== Kafka UI (optional) =====================
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:29092
+    ports:
+      - "8085:8080"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: unless-stopped
+    networks: [app-net]
+  employee-worker:
+    build: .
+    container_name: employee-worker
+    depends_on:
+      kafka:
+        condition: service_healthy
+      topic-init:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      KAFKA_BROKERS: kafka:29092
+      KAFKA_CLIENT_ID: employee-worker
+      KAFKA_EMP_WORKER_GROUP: employee-events-worker
+      KAFKA_EMP_TOPIC: employee.events
+    command: ["node", "dist/workers/employee-events-worker.js"]
+    restart: unless-stopped
+    networks: [app-net]

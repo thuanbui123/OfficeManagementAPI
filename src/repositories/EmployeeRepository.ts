@@ -73,3 +73,14 @@ export async function listEmployees(params: EmployeeListParams = {}) {
     totalPages: includeTotal && total ? Math.ceil(total / pageSize) : undefined, 
   };
 }
+
+export const CreateEmployee = async (data: Partial<Employee>) => {
+  try {
+    const employee = new EmployeeModel(data); 
+    await employee.save();
+    return { ok: true, employee };
+  } catch (e: any) {
+    console.error("Error in CreateEmployee:", e?.message || e);
+    return { ok: false, error: e };
+  }
+};

@@ -1,4 +1,5 @@
 import { listEmployees } from "@repositories/EmployeeRepository";
+import { Types } from "mongoose";
 
 export type ListEmployeesQuery = {
   page?: string | number;
@@ -11,6 +12,18 @@ export type ListEmployeesQuery = {
   sort?: Record<string, any>;
   includeTotal?: string | boolean;
 };
+
+type Emp = { 
+    id: Types.ObjectId;
+    empCode: string;
+    email: string;
+    fullName: string;
+    deptId?: Types.ObjectId;
+    title?: string;
+    hireDate: Date;
+    salary: Number;
+};
+const db = new Map<string, Emp>();
 
 const toInt = (v: unknown, fallback: number) => {
   const n = Number(v);
@@ -82,6 +95,31 @@ class EmployeeService {
   async listEmployees(q: ListEmployeesQuery | undefined | null) {
     const params = this.parseListParams(q);
     return listEmployees(params);
+  }
+
+  async create(data: Omit<Emp, 'id'> & { id?: Types.ObjectId }) {
+    const id = data.id ?? new Types.ObjectId();
+    if (db.has(id.toString())) throw new Error('Employee exists');
+    const emp: Emp = { 
+      id, 
+      empCode: data.empCode,
+      hireDate: data.hireDate,
+      salary: data.salary,
+      email: data.email, 
+      fullName: data.fullName, 
+      deptId: data?.deptId, 
+      title: data.title 
+    };
+    db.set(id.toHexString(), emp);
+    return emp;
+  }
+
+  async update(id: string, changes: Partial<Emp>) {
+    const cur = db.get(id);
+    if (!cur) throw new Error('Not found');
+    const after = { ...cur, ...changes, id: cur.id };
+    db.set(id, after);
+    return { before: cur, after };
   }
 }
 
