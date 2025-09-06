@@ -19,9 +19,8 @@ class EmployeeController {
 
   async createEmployee(req: ReqQ<any>, res: Res,  _next: Next) {
     try {
-      const { id, empCode, email, fullName, deptId, title, hireDate, salary } = req.body;
-      const emp = await employeeService.create({ id, empCode, email, fullName, deptId, title, hireDate, salary });
-      console.log("Begin create")
+      const { id, empCode, email, fullName, deptId, userId, title, hireDate, salary } = req.body;
+      const emp = await employeeService.create({ id, empCode, email, fullName, deptId, userId, title, hireDate, salary });
       const evt: EmployeeCreated = {
         eventType: 'EmployeeCreated',
         version: 1,
@@ -29,14 +28,13 @@ class EmployeeController {
         empCode: emp.empCode,
         email: emp.email,
         fullName: emp.fullName,
+        userId: emp.userId,
         deptId: emp.deptId,
         title: emp.title,
         hireDate: emp.hireDate,
         salary: emp.salary,
       }
-      console.log("Publish evt")
       await publishJSON(TOPIC, emp.empCode, evt, { source: "officeManagementAPI" });
-      console.log('✅ Published EmployeeCreated');
       res.status(201).json({ id: emp.id });
     } catch (e: any) {
       if (e?.message === "KAFKA_SEND_FAILED") {

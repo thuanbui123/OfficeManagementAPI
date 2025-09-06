@@ -7,7 +7,8 @@ import { CreateEmployee } from '@repositories/EmployeeRepository';
 
 const GROUP = process.env.KAFKA_EMP_WORKER_GROUP ?? 'employee-events-worker';
 const TOPIC = process.env.KAFKA_EMP_TOPIC ?? 'employee.events';
-
+const db = require("@config/db/index");
+db.connect();
 async function processEvent(payload: any) {
   switch (payload?.eventType) {
     case 'EmployeeCreated':

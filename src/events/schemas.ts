@@ -8,6 +8,7 @@ export type EmployeeCreated = {
   email: string;
   fullName: string;
   deptId?: Types.ObjectId;
+  userId?: Types.ObjectId;
   title?: string;
   hireDate: Date;
   salary: Number;
@@ -22,6 +23,7 @@ export type EmployeeUpdated = {
     email: string;
     fullName: string;
     deptId?: Types.ObjectId;
+    userId?: Types.ObjectId;
     title?: string;
     hireDate: Date;
     salary: Number;

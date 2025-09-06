@@ -19,6 +19,7 @@ type Emp = {
     email: string;
     fullName: string;
     deptId?: Types.ObjectId;
+    userId?: Types.ObjectId;
     title?: string;
     hireDate: Date;
     salary: Number;
@@ -108,6 +109,7 @@ class EmployeeService {
       email: data.email, 
       fullName: data.fullName, 
       deptId: data?.deptId, 
+      userId: data?.userId,
       title: data.title 
     };
     db.set(id.toHexString(), emp);
